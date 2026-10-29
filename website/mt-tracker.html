@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>E7-1 MT Praise &amp; Warning Tracker</title>
+  <style>
+    :root {
+      --ink: #1c1917;
+      --muted: #78716c;
+      --line: #d6d3d1;
+      --paper: #f5f0e8;
+      --floor: #ece6da;
+      --chrome: #fffdf9;
+      --accent: #3f4a3c;
+      --praise-bg: #e7f3ec;
+      --praise-ink: #166534;
+      --praise-border: #86efac;
+      --warn-bg: #fef3c7;
+      --warn-ink: #9a3412;
+      --warn-border: #fcd34d;
+      --redeem-bg: #eef2ff;
+      --redeem-ink: #3730a3;
+      --redeem-border: #a5b4fc;
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body {
+      font-family: "Avenir Next", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      background: var(--chrome);
+      border-bottom: 1px solid var(--line);
+      flex-wrap: wrap;
+    }
+    .topbar h1 {
+      margin: 0;
+      font-family: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+    .topbar .sub {
+      color: var(--muted);
+      font-size: 0.82rem;
+      margin-right: auto;
+    }
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--chrome);
+      color: var(--ink);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .btn:hover { background: var(--floor); }
+    .btn.primary {
+      background: var(--accent);
+      color: #f5f0e8;
+      border-color: var(--accent);
+    }
+    .btn.primary:hover { opacity: 0.92; }
+    .btn.praise-btn {
+      background: var(--praise-bg);
+      color: var(--praise-ink);
+      border-color: var(--praise-border);
+      font-weight: 600;
+    }
+    .btn.warn-btn {
+      background: var(--warn-bg);
+      color: var(--warn-ink);
+      border-color: var(--warn-border);
+      font-weight: 600;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 350px;
+      gap: 16px;
+      padding: 16px 18px;
+      flex: 1;
+      overflow: hidden;
+    }
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+        overflow: auto;
+      }
+    }
+    .main-col {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    .side-col {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+    }
+
+    .card {
+      background: var(--chrome);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .card h2 {
+      margin: 0 0 8px 0;
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Adaptive Banner */
+    .adaptive-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .stat-box {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 12px;
+    }
+    .stat-box .label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+    }
+    .stat-box .val {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-top: 2px;
+    }
+    .stat-box .hint {
+      font-size: 0.74rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .tier-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.82rem;
+    }
+    .tier-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .tier-tag {
+      font-weight: 600;
+      font-size: 0.75rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--floor);
+    }
+    .tier-tag.redeem {
+      background: var(--redeem-bg);
+      color: var(--redeem-ink);
+      border: 1px solid var(--redeem-border);
+    }
+    .tier-tag.zero {
+      background: var(--praise-bg);
+      color: var(--praise-ink);
+      border: 1px solid var(--praise-border);
+    }
+    .QuickChip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: #fff;
+      font-size: 0.78rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .QuickChip:hover {
+      border-color: var(--praise-ink);
+      background: var(--praise-bg);
+    }
+    .QuickChip.selected-praise {
+      background: var(--praise-ink);
+      color: #fff;
+      border-color: var(--praise-ink);
+    }
+
+    /* Filter Bar */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toolbar input[type="search"] {
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 0.83rem;
+      width: 190px;
+      background: #fff;
+    }
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      overflow: hidden;
+      background: var(--paper);
+    }
+    .seg button {
+      border: 0;
+      background: transparent;
+      padding: 5px 10px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .seg button.active {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    /* Student Grid */
+    .student-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(205px, 1fr));
+      gap: 9px;
+    }
+    .student-card {
+      background: var(--chrome);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      padding: 10px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      transition: transform 0.08s ease, border-color 0.12s ease;
+      position: relative;
+    }
+    .student-card.draft-praise {
+      border: 2px solid var(--praise-ink);
+      background: #f2fbf5;
+    }
+    .student-card.draft-warning {
+      border: 2px solid var(--warn-ink);
+      background: #fffbeb;
+    }
+    .student-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 6px;
+    }
+    .student-name {
+      font-weight: 700;
+      font-size: 0.94rem;
+    }
+    .student-cname {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 400;
+      margin-left: 4px;
+    }
+    .rank-badge {
+      font-size: 0.7rem;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--paper);
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .rank-badge.redeem {
+      background: var(--redeem-bg);
+      color: var(--redeem-ink);
+    }
+    .rank-badge.zero {
+      background: var(--praise-bg);
+      color: var(--praise-ink);
+    }
+    .rank-badge.cooldown {
+      background: #f5f5f4;
+      color: #a8a29e;
+    }
+    .student-metrics {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .pill-p {
+      color: var(--praise-ink);
+      font-weight: 600;
+    }
+    .pill-w {
+      color: var(--warn-ink);
+      font-weight: 600;
+    }
+    .pill-eff {
+      margin-left: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.75rem;
+      color: var(--ink);
+      background: var(--paper);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+    .student-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .act-btn {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      border-radius: 6px;
+      padding: 5px 0;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .act-btn.praise:hover, .act-btn.praise.active {
+      background: var(--praise-ink);
+      color: #fff;
+      border-color: var(--praise-ink);
+    }
+    .act-btn.warn:hover, .act-btn.warn.active {
+      background: var(--warn-ink);
+      color: #fff;
+      border-color: var(--warn-ink);
+    }
+
+    /* Draft Panel */
+    .draft-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-height: 32px;
+      padding: 6px;
+      border-radius: 6px;
+      background: var(--paper);
+      border: 1px dashed var(--line);
+    }
+    .draft-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .draft-tag.praise {
+      background: var(--praise-bg);
+      color: var(--praise-ink);
+      border: 1px solid var(--praise-border);
+    }
+    .draft-tag.warn {
+      background: var(--warn-bg);
+      color: var(--warn-ink);
+      border: 1px solid var(--warn-border);
+    }
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .history-item {
+      padding: 8px 10px;
+      border-radius: 7px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      font-size: 0.79rem;
+    }
+    .history-item-head {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .history-item-head .del-sess {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.74rem;
+    }
+    .history-item-head .del-sess:hover { color: var(--warn-ink); }
+    .status-toast {
+      font-size: 0.78rem;
+      color: var(--praise-ink);
+      font-weight: 600;
+    }
+    .weekly-summary { display: none; }
+    .weekly-summary.open { display: block; }
+    .weekly-summary h3 {
+      margin: 12px 0 6px;
+      font-size: 0.86rem;
+    }
+    .weekly-summary ol {
+      margin: 0;
+      padding-left: 1.2rem;
+      font-size: 0.86rem;
+    }
+    .weekly-summary li { margin: 2px 0; }
+    .weekly-summary .note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin: 0;
+    }
+    .manage-students .note {
+      color: var(--muted);
+      font-size: 0.78rem;
+      margin: 0;
+    }
+    .manage-students { display: none; }
+    .manage-students.open { display: flex; flex-direction: column; gap: 8px; }
+    .manage-row, .manage-add {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .manage-row input, .manage-add input {
+      flex: 1;
+      min-width: 0;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      font-size: 0.86rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <h1>Classroom studying time Tracker</h1>
+    <span class="sub" id="top-summary">Loading...</span>
+    <span class="status-toast" id="status-toast"></span>
+    <button class="btn" id="btn-connect-folder" type="button" title="Save session-history.json, student-records.json, and praise-warning.md to the Aliyun folder /root/mt-tracker">Save to Aliyun</button>
+    <button class="btn" id="btn-weekly-summary" type="button">Weekly summary</button>
+    <button class="btn" id="btn-reset-default" type="button" title="Reload the baseline sessions saved in this page">Reset to Baseline</button>
+  </header>
+
+  <div class="layout">
+    <main class="main-col">
+      <section class="card weekly-summary" id="weekly-summary">
+        <h2>Weekly summary <span id="weekly-range" style="font-size:0.78rem;font-weight:400;color:var(--muted)"></span></h2>
+        <p class="note">The last 7 days. Positive report is the highest praise count. Quasi-positive is any other praise this week and receives house points this week only. There is no extra weight next week.</p>
+        <h3>Positive report</h3>
+        <ol id="weekly-positive"></ol>
+        <h3>Quasi-positive</h3>
+        <ol id="weekly-quasi"></ol>
+        <h3>Need a warning</h3>
+        <ol id="weekly-warning"></ol>
+      </section>
+      <!-- Online Adaptive Recommendation Card -->
+      <section class="card">
+        <h2>
+          <span>Next MT Session — Online Adaptive Recommendation</span>
+          <span style="font-size:0.78rem;font-weight:400;color:var(--muted)" id="reason-label"></span>
+        </h2>
+        <div class="adaptive-grid">
+          <div class="stat-box">
+            <div class="label">Suggested Ratio</div>
+            <div class="val" id="stat-ratio">6 Praise : ≤ 2 Warning</div>
+            <div class="hint" id="stat-split">2 Quality + 4 Fairness Backfill</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Redemption Weight (α_t)</div>
+            <div class="val" id="stat-alpha">0.41</div>
+            <div class="hint" id="stat-formula">Score = P − 0.41 × W (lowest first)</div>
+          </div>
+          <div class="stat-box">
+            <div class="label">Class Coverage</div>
+            <div class="val" id="stat-coverage">21 / 32 Praised</div>
+            <div class="hint" id="stat-deficit">5 students have W &gt; P</div>
+          </div>
+        </div>
+
+        <div class="tier-row">
+          <div class="tier-line">
+            <span class="tier-tag redeem">Tier 1 · Redeem First (W &gt; P)</span>
+            <span id="tier-redeem-chips"></span>
+          </div>
+          <div class="tier-line">
+            <span class="tier-tag zero">Tier 2 · 0 Praise &amp; 0 Warning</span>
+            <span id="tier-zero-chips"></span>
+          </div>
+          <div class="tier-line">
+            <span class="tier-tag">Tier 3 · Next least praise (1P)</span>
+            <span id="tier-next-chips"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Student Roster & One-Click Buttons -->
+      <section class="card" style="flex:1;display:flex;flex-direction:column;gap:12px;">
+        <div class="toolbar">
+          <strong style="font-size:0.92rem;margin-right:4px;" id="student-count">Students (32)</strong>
+          <button class="btn" id="btn-manage-students" type="button">Manage students</button>
+          <input type="search" id="search-input" placeholder="Search name or 中文名..." />
+          <div class="seg" id="sort-seg">
+            <button type="button" data-sort="priority" class="active">Sort: Praise Priority</button>
+            <button type="button" data-sort="praise_desc">Most Praise</button>
+            <button type="button" data-sort="warn_desc">Most Warning</button>
+            <button type="button" data-sort="alpha">A–Z</button>
+          </div>
+          <span style="margin-left:auto;font-size:0.76rem;color:var(--muted)">Click ★ or ⚠ on any student to add to today's board</span>
+        </div>
+
+        <div class="manage-students" id="manage-students">
+          <div id="manage-list"></div>
+          <form class="manage-add" id="manage-add">
+            <input name="nickname" placeholder="Name" required>
+            <input name="chinese_name" placeholder="中文名">
+            <button class="btn primary" type="submit">Add</button>
+          </form>
+        </div>
+
+        <div class="student-grid" id="student-grid"></div>
+      </section>
+    </main>
+
+    <!-- Right Sidebar: Today's Whiteboard Draft & Session History -->
+    <aside class="side-col">
+      <section class="card">
+        <h2>
+          <span>Today's MT Board</span>
+          <span style="font-size:0.76rem;color:var(--muted)" id="next-session-id">session-8</span>
+        </h2>
+
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;font-weight:600;color:var(--praise-ink);margin-bottom:4px;">
+            <span>★ Praise (Left / Star Side)</span>
+            <span id="draft-praise-count">0 selected</span>
+          </div>
+          <div class="draft-list" id="draft-praise-list"></div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;font-size:0.8rem;font-weight:600;color:var(--warn-ink);margin-bottom:4px;">
+            <span>⚠ Warning (Right / Triangle Side)</span>
+            <span id="draft-warn-count">0 selected</span>
+          </div>
+          <div class="draft-list" id="draft-warn-list"></div>
+        </div>
+
+        <div style="margin-bottom:10px;">
+          <label style="font-size:0.76rem;color:var(--muted);display:block;margin-bottom:3px;" for="session-note">Date</label>
+          <input type="date" id="session-note" style="width:100%;padding:6px 9px;border:1px solid var(--line);border-radius:6px;font-size:0.95rem;background:#fff;" />
+        </div>
+
+        <div style="display:flex;gap:8px;">
+          <button class="btn primary" id="btn-record-session" type="button" style="flex:1;padding:9px;">Record Session &amp; Update</button>
+          <button class="btn" id="btn-clear-draft" type="button">Clear</button>
+        </div>
+      </section>
+
+      <section class="card" style="flex:1;display:flex;flex-direction:column;">
+        <h2>
+          <span>Session History</span>
+          <span style="font-size:0.76rem;color:var(--muted)" id="history-count-label">7 sessions</span>
+        </h2>
+        <div class="history-list" id="history-list"></div>
+      </section>
+    </aside>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "jcid-e71-mt-tracker-v1";
+
+    const BASELINE_ROSTER = [];
+
+    const BASELINE_SESSIONS = [];
+
+    let state = {
+      sessions: JSON.parse(JSON.stringify(BASELINE_SESSIONS)),
+      roster: JSON.parse(JSON.stringify(BASELINE_ROSTER)),
+      draftPraise: [],
+      draftWarning: [],
+      sortMode: "priority",
+      search: "",
+      dirHandle: null
+    };
+
+    function localISODate() {
+      const d = new Date();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return d.getFullYear() + "-" + m + "-" + day;
+    }
+
+    function shiftISODate(iso, days) {
+      const [y, m, d] = iso.split("-").map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() + days);
+      const month = String(dt.getMonth() + 1).padStart(2, "0");
+      const day = String(dt.getDate()).padStart(2, "0");
+      return dt.getFullYear() + "-" + month + "-" + day;
+    }
+
+    function studentLabel(nickname) {
+      const row = state.roster.find(s => s.nickname === nickname);
+      if (row && row.chinese_name) return nickname + " " + row.chinese_name;
+      return nickname;
+    }
+
+    function weeklyCounts() {
+      const end = localISODate();
+      const start = shiftISODate(end, -6);
+      const praise = {};
+      const warning = {};
+      for (const sess of state.sessions) {
+        if (!sess.date || sess.date < start || sess.date > end) continue;
+        for (const name of sess.praise || []) praise[name] = (praise[name] || 0) + 1;
+        for (const name of sess.warning || []) warning[name] = (warning[name] || 0) + 1;
+      }
+      return { start, end, praise, warning };
+    }
+
+    function fillWeeklyList(id, rows, emptyText) {
+      const el = document.getElementById(id);
+      el.replaceChildren();
+      if (!rows.length) {
+        const li = document.createElement("li");
+        li.textContent = emptyText;
+        el.appendChild(li);
+        return;
+      }
+      for (const row of rows) {
+        const li = document.createElement("li");
+        li.textContent = row;
+        el.appendChild(li);
+      }
+    }
+
+    function renderWeeklySummary() {
+      const { start, end, praise, warning } = weeklyCounts();
+      document.getElementById("weekly-range").textContent = start + " to " + end;
+      const praiseRows = Object.entries(praise).map(([name, count]) => ({ name, count }));
+      const maxPraise = praiseRows.reduce((max, row) => Math.max(max, row.count), 0);
+      const byCountThenName = (a, b) => b.count - a.count || a.name.localeCompare(b.name);
+      const positive = praiseRows.filter(row => row.count === maxPraise && maxPraise > 0).sort(byCountThenName);
+      const quasi = praiseRows.filter(row => row.count > 0 && row.count < maxPraise).sort(byCountThenName);
+      const warned = Object.entries(warning)
+        .map(([name, count]) => ({ name, count }))
+        .filter(row => row.count > 0)
+        .sort(byCountThenName);
+      const line = row => studentLabel(row.name) + " — " + row.count;
+      fillWeeklyList("weekly-positive", positive.map(line), "No praise in this week.");
+      fillWeeklyList("weekly-quasi", quasi.map(line), "No quasi-positive students this week.");
+      fillWeeklyList("weekly-warning", warned.map(line), "No warnings in this week.");
+    }
+
+    function loadSavedState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.sessions) && parsed.sessions.length > 0) {
+            state.sessions = parsed.sessions;
+          }
+          if (parsed && Array.isArray(parsed.roster) && parsed.roster.length > 0) {
+            state.roster = parsed.roster;
+          }
+        }
+      } catch (_) {}
+      // Also try fetching session-history.json if served over HTTP
+      if (window.fetch && location.protocol.startsWith("http")) {
+        fetch("session-history.json", { cache: "no-store" })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            if (data && Array.isArray(data.sessions) && data.sessions.length >= state.sessions.length) {
+              state.sessions = data.sessions;
+              if (Array.isArray(data.roster) && data.roster.length > 0) state.roster = data.roster;
+              saveLocal();
+              renderAll();
+            }
+          })
+          .catch(() => {});
+      }
+    }
+
+    function saveLocal() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          sessions: state.sessions,
+          roster: state.roster
+        }));
+      } catch (_) {}
+    }
+
+    function computeModel() {
+      const rosterMap = {};
+      const students = state.roster.map(r => {
+        const obj = {
+          nickname: r.nickname,
+          chinese_name: r.chinese_name,
+          gender: r.gender,
+          house: r.house,
+          praise: 0,
+          warning: 0,
+          last_praised_session: null,
+          last_warned_session: null
+        };
+        rosterMap[r.nickname] = obj;
+        return obj;
+      });
+
+      const unmatchedMap = {};
+      const defaultReasons = {};
+
+      for (const sess of state.sessions) {
+        const sid = sess.session_id;
+        for (const rawName of (sess.praise || [])) {
+          const name = rawName === "Olivia" ? "Seohyun" : (rawName === "Mar" || rawName === "Max" ? "Max D" : rawName);
+          if (rosterMap[name]) {
+            rosterMap[name].praise += 1;
+            rosterMap[name].last_praised_session = sid;
+          } else {
+            if (!unmatchedMap[name]) {
+              unmatchedMap[name] = {
+                name,
+                praise: 0,
+                warning: 0,
+                last_praised_session: null,
+                last_warned_session: null,
+                reason: defaultReasons[name] || "Not on E7-1 nickname roster."
+              };
+            }
+            unmatchedMap[name].praise += 1;
+            unmatchedMap[name].last_praised_session = sid;
+          }
+        }
+        for (const rawName of (sess.warning || [])) {
+          const name = rawName === "Olivia" ? "Seohyun" : (rawName === "Mar" || rawName === "Max" ? "Max D" : rawName);
+          if (rosterMap[name]) {
+            rosterMap[name].warning += 1;
+            rosterMap[name].last_warned_session = sid;
+          } else {
+            if (!unmatchedMap[name]) {
+              unmatchedMap[name] = {
+                name,
+                praise: 0,
+                warning: 0,
+                last_praised_session: null,
+                last_warned_session: null,
+                reason: defaultReasons[name] || "Not on E7-1 nickname roster."
+              };
+            }
+            unmatchedMap[name].warning += 1;
+            unmatchedMap[name].last_warned_session = sid;
+          }
+        }
+      }
+
+      const lastSess = state.sessions[state.sessions.length - 1] || { session_id: null, praise: [], warning: [] };
+      const lastSid = lastSess.session_id;
+
+      const totalW = students.reduce((acc, s) => acc + s.warning, 0);
+      const unredeemedDeficit = students.reduce((acc, s) => acc + Math.max(0, s.warning - s.praise), 0);
+      const deficitRatio = unredeemedDeficit / Math.max(1, totalW);
+
+      const alpha_t = Math.max(0.20, Math.min(0.60, Math.round((0.25 + 0.40 * deficitRatio) * 100) / 100));
+
+      const lastP = (lastSess.praise || []).length;
+      const lastW = (lastSess.warning || []).length;
+      const zeroPraiseCount = students.filter(s => s.praise === 0).length;
+      const maxWStudent = Math.max(0, ...students.map(s => s.warning));
+
+      let targetPraise = 5, maxWarning = 3, qualityM = 3, reason = "Balanced state — standard 5P : 3W (3 quality + 2 backfill)";
+      if (lastP <= lastW && state.sessions.length > 0) {
+        targetPraise = 6; maxWarning = 2; qualityM = 2;
+        reason = `Last session was warning-heavy (${lastP}P : ${lastW}W) — rebound to 6P : 2W (3:1)`;
+      } else if (zeroPraiseCount >= 8) {
+        targetPraise = 6; maxWarning = 3; qualityM = 2;
+        reason = `${zeroPraiseCount} students still at 0 praise — keep 6P : 3W with 4 backfill slots`;
+      } else if (maxWStudent >= 3) {
+        targetPraise = 5; maxWarning = 2; qualityM = 2;
+        reason = "Top warning count >= 3 — cap warnings at 2 and prioritize redemption";
+      }
+      const backfillSlots = targetPraise - qualityM;
+
+      students.forEach(s => {
+        s.praised_last_session = (s.last_praised_session === lastSid && lastSid !== null);
+        s.warned_last_session = (s.last_warned_session === lastSid && lastSid !== null);
+        s.effective_score = Math.round((s.praise - alpha_t * s.warning) * 100) / 100;
+      });
+
+      const praiseQueue = [...students].sort((a, b) => {
+        if (a.praised_last_session !== b.praised_last_session) return a.praised_last_session ? 1 : -1;
+        if (a.effective_score !== b.effective_score) return a.effective_score - b.effective_score;
+        if (a.praise !== b.praise) return a.praise - b.praise;
+        return a.nickname.localeCompare(b.nickname);
+      });
+
+      praiseQueue.forEach((s, idx) => { s.priority_rank = idx + 1; });
+
+      return {
+        students,
+        unmatched: Object.values(unmatchedMap),
+        alpha_t,
+        deficitRatio,
+        zeroPraiseCount,
+        unredeemedCount: students.filter(s => s.warning > s.praise).length,
+        targetPraise,
+        maxWarning,
+        qualityM,
+        backfillSlots,
+        reason,
+        praiseQueue,
+        lastSid
+      };
+    }
+
+    function buildSessionHistoryJson() {
+      return {
+        class: "E7-1",
+        total_sessions: state.sessions.length,
+        roster: state.roster,
+        sessions: state.sessions
+      };
+    }
+
+    function buildStudentRecordsJson(model) {
+      const pMatched = model.students.reduce((a, s) => a + s.praise, 0);
+      const wMatched = model.students.reduce((a, s) => a + s.warning, 0);
+      const pUnmatched = model.unmatched.reduce((a, u) => a + u.praise, 0);
+      const wUnmatched = model.unmatched.reduce((a, u) => a + u.warning, 0);
+      return {
+        class: "E7-1",
+        updated_after_session: model.lastSid,
+        summary: {
+          roster_size: model.students.length,
+          total_praise_matched: pMatched,
+          total_warning_matched: wMatched,
+          total_praise_including_unmatched: pMatched + pUnmatched,
+          total_warning_including_unmatched: wMatched + wUnmatched
+        },
+        students: model.students.map(s => ({
+          nickname: s.nickname,
+          chinese_name: s.chinese_name,
+          gender: s.gender,
+          house: s.house,
+          praise: s.praise,
+          warning: s.warning,
+          last_praised_session: s.last_praised_session,
+          last_warned_session: s.last_warned_session
+        })),
+        unmatched_or_ambiguous: model.unmatched
+      };
+    }
+
+    function buildMarkdown(model) {
+      const alpha = model.alpha_t.toFixed(2);
+      const allRows = [
+        ...model.students.map(s => ({
+          nickname: s.nickname,
+          chinese_name: s.chinese_name || "",
+          praise: s.praise,
+          warning: s.warning,
+          effective_score: s.effective_score
+        })),
+        ...model.unmatched.filter(u => u.praise > 0 || u.warning > 0).map(u => ({
+          nickname: u.name,
+          chinese_name: "",
+          praise: u.praise,
+          warning: u.warning,
+          effective_score: Math.round((u.praise - model.alpha_t * u.warning) * 100) / 100
+        }))
+      ];
+      allRows.sort((a, b) => (b.praise - a.praise) || (b.warning - a.warning) || a.nickname.localeCompare(b.nickname));
+
+      const nSessions = state.sessions.length;
+      const nDups = state.sessions.reduce((a, s) => a + (s.duplicate_images ? s.duplicate_images.length : 0), 0);
+
+      const lines = [
+        "# MT praise and warning",
+        "",
+        `${nSessions} sessions recorded (${nDups} duplicate board photos skipped). Praise is every name on the star side. Warning is every name under the warning triangle.`,
+        "",
+        `| Student | Chinese name | Praise | Warning | Effective score ($P - ${alpha}W$) |`,
+        "|---|---|---:|---:|---:|"
+      ];
+      for (const r of allRows) {
+        const signScore = (r.effective_score >= 0 ? "+" : "") + r.effective_score.toFixed(2);
+        lines.push(`| ${r.nickname} | ${r.chinese_name} | ${r.praise} | ${r.warning} | ${signScore} |`);
+      }
+
+      const pq = model.praiseQueue;
+      const tierRedeem = pq.filter(x => !x.praised_last_session && x.effective_score < 0);
+      const tierZero = pq.filter(x => !x.praised_last_session && x.effective_score === 0);
+      const tierNext = pq.filter(x => !x.praised_last_session && x.praise === 1 && x.effective_score >= 0);
+
+      const fmt = items => items.map(x => {
+        const sc = (x.effective_score >= 0 ? "+" : "") + x.effective_score.toFixed(2);
+        return `**${x.nickname}** (${x.praise}P/${x.warning}W, \`${sc}\`)`;
+      }).join(", ") || "None";
+
+      lines.push(
+        "",
+        "Olivia on the board is Seohyun. Mar on the board is Max D.",
+        "",
+        "## Next MT session recommendation (online adaptive update)",
+        "",
+        `- **Suggested ratio:** **${model.targetPraise} Praise : at most ${model.maxWarning} Warning** (${model.reason})`,
+        `- **Praise split:** **${model.qualityM} Quality** (Phase 1) + **${model.backfillSlots} Fairness Backfill** (Phase 2)`,
+        `- **Redemption weight $\\alpha_t$:** **${alpha}** (effective score $= P - ${alpha} W$, lowest score goes first)`,
+        "",
+        "### Class-wide Praise Backfill Priority (lowest effective score first)",
+        "",
+        `1. **Tier 1 — Redemption first ($P - ${alpha}W < 0$):** ${fmt(tierRedeem)}`,
+        `2. **Tier 2 — Zero praise & zero warning ($0.00$):** ${fmt(tierZero)}`,
+        `3. **Tier 3 — Next least praise (1P):** ${fmt(tierNext)}`
+      );
+      return lines.join("\n") + "\n";
+    }
+
+    function authHeaders() {
+      const token = localStorage.getItem("jcid-mt-token") || "";
+      return {
+        "Content-Type": "application/json",
+        "X-MT-Token": token
+      };
+    }
+
+    async function syncToServer(model) {
+      try {
+        const res = await fetch("/api/state", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            history: buildSessionHistoryJson(),
+            records: buildStudentRecordsJson(model),
+            markdown: buildMarkdown(model)
+          })
+        });
+        if (res.status === 401) {
+          const token = prompt("Aliyun save token (stored only in this browser):");
+          if (!token) return false;
+          localStorage.setItem("jcid-mt-token", token.trim());
+          return syncToServer(model);
+        }
+        if (!res.ok) return false;
+        showToast("Saved to Aliyun /root/mt-tracker");
+        const btn = document.getElementById("btn-connect-folder");
+        btn.textContent = "✓ Saved to Aliyun";
+        btn.classList.add("praise-btn");
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("status-toast");
+      el.textContent = msg;
+      setTimeout(() => {
+        if (el.textContent === msg) el.textContent = "";
+      }, 4000);
+    }
+
+    function togglePraise(name) {
+      const wIdx = state.draftWarning.indexOf(name);
+      if (wIdx !== -1) state.draftWarning.splice(wIdx, 1);
+
+      const pIdx = state.draftPraise.indexOf(name);
+      if (pIdx === -1) {
+        state.draftPraise.push(name);
+      } else {
+        state.draftPraise.splice(pIdx, 1);
+      }
+      renderAll();
+    }
+
+    function toggleWarning(name) {
+      const pIdx = state.draftPraise.indexOf(name);
+      if (pIdx !== -1) state.draftPraise.splice(pIdx, 1);
+
+      const wIdx = state.draftWarning.indexOf(name);
+      if (wIdx === -1) {
+        state.draftWarning.push(name);
+      } else {
+        state.draftWarning.splice(wIdx, 1);
+      }
+      renderAll();
+    }
+
+    function renderAll() {
+      const model = computeModel();
+      const alphaStr = model.alpha_t.toFixed(2);
+
+      document.getElementById("top-summary").textContent =
+        `${state.sessions.length} sessions recorded · ${model.students.reduce((a, s) => a + s.praise, 0)} matched praise · ${model.students.reduce((a, s) => a + s.warning, 0)} matched warnings`;
+
+      document.getElementById("reason-label").textContent = model.reason;
+      document.getElementById("stat-ratio").textContent = `${model.targetPraise} Praise : ≤ ${model.maxWarning} Warning`;
+      document.getElementById("stat-split").textContent = `${model.qualityM} Quality + ${model.backfillSlots} Fairness Backfill`;
+      document.getElementById("stat-alpha").textContent = alphaStr;
+      document.getElementById("stat-formula").textContent = `Score = P − ${alphaStr} × W (lowest first)`;
+      document.getElementById("student-count").textContent = `Students (${state.roster.length})`;
+      document.getElementById("stat-coverage").textContent = `${model.students.length - model.zeroPraiseCount} / ${model.students.length} Praised`;
+      document.getElementById("stat-deficit").textContent = `${model.unredeemedCount} students have W > P`;
+      if (document.getElementById("weekly-summary").classList.contains("open")) renderWeeklySummary();
+
+      // Tier 1 & Tier 2 quick chips
+      const tierRedeem = model.praiseQueue.filter(s => !s.praised_last_session && s.effective_score < 0);
+      const tierZero = model.praiseQueue.filter(s => !s.praised_last_session && s.effective_score === 0);
+      const tierNext = model.praiseQueue.filter(s => !s.praised_last_session && s.praise === 1 && s.effective_score >= 0);
+
+      const makeChipHtml = s => {
+        const selected = state.draftPraise.includes(s.nickname) ? "selected-praise" : "";
+        const sc = (s.effective_score >= 0 ? "+" : "") + s.effective_score.toFixed(2);
+        return `<span class="QuickChip ${selected}" data-quick-praise="${s.nickname}">
+          <strong>${s.nickname}</strong>
+          <span style="opacity:0.75">(${s.praise}P/${s.warning}W · ${sc})</span>
+        </span>`;
+      };
+      document.getElementById("tier-redeem-chips").innerHTML = tierRedeem.map(makeChipHtml).join(" ") || `<span style="color:var(--muted)">None</span>`;
+      document.getElementById("tier-zero-chips").innerHTML = tierZero.map(makeChipHtml).join(" ") || `<span style="color:var(--muted)">None</span>`;
+      document.getElementById("tier-next-chips").innerHTML = tierNext.map(makeChipHtml).join(" ") || `<span style="color:var(--muted)">None</span>`;
+
+      // Sort and filter students
+      const q = state.search.trim().toLowerCase();
+      let list = model.students.filter(s => {
+        if (!q) return true;
+        return s.nickname.toLowerCase().includes(q) || (s.chinese_name && s.chinese_name.includes(q));
+      });
+
+      if (state.sortMode === "priority") {
+        list.sort((a, b) => a.priority_rank - b.priority_rank);
+      } else if (state.sortMode === "praise_desc") {
+        list.sort((a, b) => (b.praise - a.praise) || (b.warning - a.warning) || a.nickname.localeCompare(b.nickname));
+      } else if (state.sortMode === "warn_desc") {
+        list.sort((a, b) => (b.warning - a.warning) || (a.praise - b.praise) || a.nickname.localeCompare(b.nickname));
+      } else {
+        list.sort((a, b) => a.nickname.localeCompare(b.nickname));
+      }
+
+      const gridEl = document.getElementById("student-grid");
+      gridEl.innerHTML = list.map(s => {
+        const inP = state.draftPraise.includes(s.nickname);
+        const inW = state.draftWarning.includes(s.nickname);
+        const cardCls = inP ? "draft-praise" : (inW ? "draft-warning" : "");
+        const sc = (s.effective_score >= 0 ? "+" : "") + s.effective_score.toFixed(2);
+
+        let badgeClass = "";
+        let badgeText = `#${s.priority_rank}`;
+        if (s.praised_last_session) {
+          badgeClass = "cooldown";
+          badgeText = "Praised last MT";
+        } else if (s.effective_score < 0) {
+          badgeClass = "redeem";
+          badgeText = `#${s.priority_rank} Redeem`;
+        } else if (s.effective_score === 0) {
+          badgeClass = "zero";
+          badgeText = `#${s.priority_rank} 0P/0W`;
+        }
+
+        return `<div class="student-card ${cardCls}">
+          <div class="student-head">
+            <div>
+              <span class="student-name">${s.nickname}</span>
+              <span class="student-cname">${s.chinese_name || ""}</span>
+            </div>
+            <span class="rank-badge ${badgeClass}">${badgeText}</span>
+          </div>
+          <div class="student-metrics">
+            <span class="pill-p">★ ${s.praise}P</span>
+            <span class="pill-w">⚠ ${s.warning}W</span>
+            <span class="pill-eff" title="Effective score = P - ${alphaStr}W">${sc}</span>
+          </div>
+          <div class="student-actions">
+            <button type="button" class="act-btn praise ${inP ? "active" : ""}" data-act-praise="${s.nickname}">★ Praise</button>
+            <button type="button" class="act-btn warn ${inW ? "active" : ""}" data-act-warn="${s.nickname}">⚠ Warning</button>
+          </div>
+        </div>`;
+      }).join("");
+
+      // Draft Panel
+      const nextNum = state.sessions.length + 1;
+      document.getElementById("next-session-id").textContent = `session-${nextNum}`;
+      document.getElementById("draft-praise-count").textContent = `${state.draftPraise.length} / target ${model.targetPraise}`;
+      document.getElementById("draft-warn-count").textContent = `${state.draftWarning.length} / max ${model.maxWarning}`;
+
+      document.getElementById("draft-praise-list").innerHTML = state.draftPraise.length
+        ? state.draftPraise.map(n => `<span class="draft-tag praise" data-remove-praise="${n}">★ ${n} ×</span>`).join("")
+        : `<span style="font-size:0.78rem;color:var(--muted)">Click ★ Praise on students to add...</span>`;
+
+      document.getElementById("draft-warn-list").innerHTML = state.draftWarning.length
+        ? state.draftWarning.map(n => `<span class="draft-tag warn" data-remove-warn="${n}">⚠ ${n} ×</span>`).join("")
+        : `<span style="font-size:0.78rem;color:var(--muted)">Click ⚠ Warning on students to add...</span>`;
+
+      // History Panel (newest first)
+      if (document.getElementById("manage-students").classList.contains("open")) renderManageList();
+
+      document.getElementById("history-count-label").textContent = `${state.sessions.length} sessions`;
+      const histEl = document.getElementById("history-list");
+      histEl.innerHTML = [...state.sessions].reverse().map((sess, revIdx) => {
+        const realIdx = state.sessions.length - 1 - revIdx;
+        const pNames = (sess.praise || []).join(", ") || "—";
+        const wNames = (sess.warning || []).join(", ") || "—";
+        const dateStr = sess.date ? ` · ${sess.date}` : "";
+        return `<div class="history-item">
+          <div class="history-item-head">
+            <span>${sess.session_id}${dateStr}</span>
+            <button type="button" class="del-sess" data-del-idx="${realIdx}" title="Delete this session">Delete</button>
+          </div>
+          <div style="color:var(--praise-ink)"><strong>★ (${(sess.praise || []).length}):</strong> ${pNames}</div>
+          <div style="color:var(--warn-ink)"><strong>⚠ (${(sess.warning || []).length}):</strong> ${wNames}</div>
+          ${sess.notes ? `<div style="color:var(--muted);font-size:0.73rem;margin-top:2px;">${sess.notes}</div>` : ""}
+        </div>`;
+      }).join("");
+    }
+
+    // Event Delegation
+    document.addEventListener("click", async e => {
+      const qp = e.target.closest("[data-quick-praise]");
+      if (qp) {
+        togglePraise(qp.getAttribute("data-quick-praise"));
+        return;
+      }
+      const ap = e.target.closest("[data-act-praise]");
+      if (ap) {
+        togglePraise(ap.getAttribute("data-act-praise"));
+        return;
+      }
+      const aw = e.target.closest("[data-act-warn]");
+      if (aw) {
+        toggleWarning(aw.getAttribute("data-act-warn"));
+        return;
+      }
+      const rp = e.target.closest("[data-remove-praise]");
+      if (rp) {
+        togglePraise(rp.getAttribute("data-remove-praise"));
+        return;
+      }
+      const rw = e.target.closest("[data-remove-warn]");
+      if (rw) {
+        toggleWarning(rw.getAttribute("data-remove-warn"));
+        return;
+      }
+      const delBtn = e.target.closest("[data-del-idx]");
+      if (delBtn) {
+        const idx = Number(delBtn.getAttribute("data-del-idx"));
+        const sess = state.sessions[idx];
+        if (sess && confirm(`Remove ${sess.session_id}?`)) {
+          state.sessions.splice(idx, 1);
+          saveLocal();
+          const model = computeModel();
+          await syncToServer(model);
+          renderAll();
+        }
+        return;
+      }
+      const sortBtn = e.target.closest("[data-sort]");
+      if (sortBtn) {
+        state.sortMode = sortBtn.getAttribute("data-sort");
+        document.querySelectorAll("#sort-seg button").forEach(b => b.classList.toggle("active", b === sortBtn));
+        renderAll();
+        return;
+      }
+    });
+
+    document.getElementById("search-input").addEventListener("input", e => {
+      state.search = e.target.value;
+      renderAll();
+    });
+
+    document.getElementById("btn-clear-draft").addEventListener("click", () => {
+      state.draftPraise = [];
+      state.draftWarning = [];
+      document.getElementById("session-note").value = localISODate();
+      renderAll();
+    });
+
+    document.getElementById("btn-record-session").addEventListener("click", async () => {
+      if (state.draftPraise.length === 0 && state.draftWarning.length === 0) {
+        alert("Click ★ Praise or ⚠ Warning on at least one student first.");
+        return;
+      }
+      const nextNum = state.sessions.length + 1;
+      const pickedDate = document.getElementById("session-note").value || localISODate();
+
+      state.sessions.push({
+        session_id: `session-${nextNum}`,
+        source: "html_tracker",
+        date: pickedDate,
+        images: [],
+        duplicate_images: [],
+        praise: [...state.draftPraise],
+        warning: [...state.draftWarning],
+        notes: `Recorded via MT HTML Tracker on ${pickedDate}.`
+      });
+
+      state.draftPraise = [];
+      state.draftWarning = [];
+      document.getElementById("session-note").value = localISODate();
+
+      saveLocal();
+      const model = computeModel();
+      const synced = await syncToServer(model);
+      if (!synced) {
+        showToast(`Recorded session-${nextNum} in browser! (Click 'Connect MT Folder' or 'Download' to save to disk)`);
+      }
+      renderAll();
+    });
+
+    document.getElementById("btn-connect-folder").addEventListener("click", async () => {
+      const model = computeModel();
+      const ok = await syncToServer(model);
+      if (!ok) {
+        alert("Could not save to Aliyun. The records stayed on this computer.");
+      }
+    });
+
+    function replaceName(list, oldName, newName) {
+      return (list || []).map(name => name === oldName ? newName : name);
+    }
+
+    function renderManageList() {
+      const root = document.getElementById("manage-list");
+      const query = state.search.trim().toLowerCase();
+      root.replaceChildren();
+      let shown = 0;
+      state.roster.forEach((student, index) => {
+        const chinese = student.chinese_name || "";
+        if (query && !student.nickname.toLowerCase().includes(query) && !chinese.includes(query)) return;
+        shown += 1;
+        const row = document.createElement("div");
+        row.className = "manage-row";
+        const nickname = document.createElement("input");
+        nickname.value = student.nickname;
+        nickname.setAttribute("aria-label", "Name");
+        const chineseInput = document.createElement("input");
+        chineseInput.value = chinese;
+        chineseInput.placeholder = "中文名";
+        chineseInput.setAttribute("aria-label", "中文名");
+        const save = document.createElement("button");
+        save.type = "button";
+        save.className = "btn";
+        save.textContent = "Save";
+        save.addEventListener("click", () => saveStudent(index, nickname.value, chineseInput.value));
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "btn";
+        remove.textContent = "Delete";
+        remove.addEventListener("click", () => deleteStudent(index));
+        row.append(nickname, chineseInput, save, remove);
+        root.appendChild(row);
+      });
+      if (query && shown === 0) {
+        const empty = document.createElement("p");
+        empty.className = "note";
+        empty.textContent = "No students match this search.";
+        root.appendChild(empty);
+      }
+    }
+
+    function saveStudent(index, nickname, chineseName) {
+      const name = nickname.trim();
+      if (!name) {
+        alert("Type a name before saving.");
+        return;
+      }
+      const taken = state.roster.some((student, i) => i !== index && student.nickname === name);
+      if (taken) {
+        alert("That name is already on the list.");
+        return;
+      }
+      const previous = state.roster[index].nickname;
+      state.roster[index].nickname = name;
+      state.roster[index].chinese_name = chineseName.trim() || null;
+      if (previous !== name) {
+        for (const sess of state.sessions) {
+          sess.praise = replaceName(sess.praise, previous, name);
+          sess.warning = replaceName(sess.warning, previous, name);
+        }
+        state.draftPraise = replaceName(state.draftPraise, previous, name);
+        state.draftWarning = replaceName(state.draftWarning, previous, name);
+      }
+      saveLocal();
+      renderAll();
+      renderManageList();
+    }
+
+    function deleteStudent(index) {
+      const student = state.roster[index];
+      if (!confirm(`Delete ${student.nickname} from the class list?`)) return;
+      state.roster.splice(index, 1);
+      state.draftPraise = state.draftPraise.filter(name => name !== student.nickname);
+      state.draftWarning = state.draftWarning.filter(name => name !== student.nickname);
+      saveLocal();
+      renderAll();
+      renderManageList();
+    }
+
+    document.getElementById("btn-manage-students").addEventListener("click", () => {
+      const panel = document.getElementById("manage-students");
+      panel.classList.toggle("open");
+      if (panel.classList.contains("open")) renderManageList();
+    });
+
+    document.getElementById("manage-add").addEventListener("submit", event => {
+      event.preventDefault();
+      const data = new FormData(event.target);
+      const name = String(data.get("nickname") || "").trim();
+      const chineseName = String(data.get("chinese_name") || "").trim();
+      if (!name) return;
+      if (state.roster.some(student => student.nickname === name)) {
+        alert("That name is already on the list.");
+        return;
+      }
+      state.roster.push({
+        nickname: name,
+        chinese_name: chineseName || null,
+        gender: "",
+        house: ""
+      });
+      event.target.reset();
+      saveLocal();
+      renderAll();
+      renderManageList();
+    });
+
+    document.getElementById("btn-weekly-summary").addEventListener("click", () => {
+      const panel = document.getElementById("weekly-summary");
+      panel.classList.toggle("open");
+      if (panel.classList.contains("open")) renderWeeklySummary();
+    });
+
+    document.getElementById("btn-reset-default").addEventListener("click", () => {
+      if (!confirm("Reset to the baseline sessions? This replaces the sessions now on this page.")) return;
+      if (!confirm("Confirm again. Reset to the baseline sessions?")) return;
+      state.sessions = JSON.parse(JSON.stringify(BASELINE_SESSIONS));
+      state.draftPraise = [];
+      state.draftWarning = [];
+      saveLocal();
+      renderAll();
+      showToast("Reset to the baseline sessions");
+    });
+
+    loadSavedState();
+    document.getElementById("session-note").value = localISODate();
+    renderAll();
+    fetch("/api/state", { headers: authHeaders(), cache: "no-store" })
+      .then(r => {
+        if (r.status === 401) {
+          const token = prompt("Aliyun save token (stored only in this browser):");
+          if (!token) return null;
+          localStorage.setItem("jcid-mt-token", token.trim());
+          return fetch("/api/state", { headers: authHeaders(), cache: "no-store" })
+            .then(retry => retry.ok ? retry.json() : null);
+        }
+        return r.ok ? r.json() : null;
+      })
+      .then(data => {
+        if (data && Array.isArray(data.sessions) && data.sessions.length) {
+          state.sessions = data.sessions;
+          if (Array.isArray(data.roster) && data.roster.length > 0) state.roster = data.roster;
+          saveLocal();
+          renderAll();
+        }
+      })
+      .catch(() => {});
+  </script>
+</body>
+</html>
